@@ -86,6 +86,17 @@ $radius: 6px;
 	background: #fff;
 	border: 1px solid #e0e0e0;
 	border-radius: $radius;
+	user-select: none;
+
+	// When something is picked, show pointer on all other thumbnails (click to place).
+	&.is-pick-active .rumanimg-editor__thumb:not( .is-dragging ) {
+		cursor: pointer;
+
+		&:hover {
+			border-color: $brand;
+			box-shadow: 0 0 0 2px rgba( $brand, 0.4 );
+		}
+	}
 }
 
 .rumanimg-editor__thumb {
@@ -94,10 +105,25 @@ $radius: 6px;
 	border-radius: 4px;
 	overflow: hidden;
 	border: 2px solid transparent;
-	transition: border-color 0.15s;
+	transition: border-color 0.15s, opacity 0.15s, box-shadow 0.15s;
+	cursor: grab;
+
+	&:active {
+		cursor: grabbing;
+	}
 
 	&:hover {
 		border-color: $brand;
+	}
+
+	&.is-dragging {
+		opacity: 0.35;
+		cursor: grabbing;
+	}
+
+	&.is-drop-target {
+		border-color: $brand;
+		box-shadow: 0 0 0 2px rgba($brand, 0.4);
 	}
 
 	img {
@@ -106,7 +132,39 @@ $radius: 6px;
 		max-width: 160px;
 		object-fit: cover;
 		display: block;
+		pointer-events: none;
 	}
+}
+
+// ── Drag ghost (floating thumbnail that follows the cursor) ───────────────────
+
+.rumanimg-drag-ghost {
+	position: fixed;
+	top: 0;
+	left: 0;
+	pointer-events: none;
+	z-index: 100000;
+	border-radius: 4px;
+	overflow: hidden;
+	border: 2px solid $brand;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+	opacity: 0.9;
+	transform: scale(1.08);
+
+	img {
+		height: 80px;
+		width: auto;
+		max-width: 160px;
+		object-fit: cover;
+		display: block;
+	}
+}
+
+// ── Status hint ───────────────────────────────────────────────────────────────
+
+.rumanimg-editor__hint {
+	font-weight: 400;
+	opacity: 0.75;
 }
 
 // ── Action buttons ────────────────────────────────────────────────────────────
