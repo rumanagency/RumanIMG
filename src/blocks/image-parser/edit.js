@@ -112,30 +112,44 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 	// ── Drag-and-drop handlers ────────────────────────────────────────────────
 
 	function handleDragStart( e, index ) {
-		e.stopPropagation(); // prevent Gutenberg from treating this as a block drag
+		// stopImmediatePropagation stops capture-phase listeners (Gutenberg uses these
+		// to detect block dragging). stopPropagation alone only stops bubble phase.
+		e.nativeEvent.stopImmediatePropagation();
+		e.stopPropagation();
 		e.dataTransfer.effectAllowed = 'move';
-		e.dataTransfer.setData( 'text/plain', String( index ) ); // required for Firefox
+		// Store index in dataTransfer so handleDrop can read it even if React state
+		// is stale across the async DnD event sequence.
+		e.dataTransfer.setData( 'text/plain', String( index ) );
 		setDragIndex( index );
 	}
 
 	function handleDragOver( e, index ) {
 		e.preventDefault();
 		e.dataTransfer.dropEffect = 'move';
-		if ( index !== dropIndex ) setDropIndex( index );
+		setDropIndex( index );
+	}
+
+	// Fired when dragging over the container gaps (between thumbnails).
+	function handleContainerDragOver( e ) {
+		e.preventDefault();
+		e.dataTransfer.dropEffect = 'move';
 	}
 
 	function handleDrop( e, index ) {
 		e.preventDefault();
-		if ( dragIndex === null || dragIndex === index ) {
+		// Read source index from dataTransfer as the authoritative source —
+		// React state (dragIndex) may be stale if the browser batched events.
+		const sourceIndex = parseInt( e.dataTransfer.getData( 'text/plain' ), 10 );
+		if ( isNaN( sourceIndex ) || sourceIndex === index ) {
 			setDragIndex( null );
 			setDropIndex( null );
 			return;
 		}
 
-		const reordered     = [ ...parsedItems ];
-		const [ moved ]     = reordered.splice( dragIndex, 1 );
-		// After removing the source item, indices above it shift down by 1.
-		const insertAt      = dragIndex < index ? index - 1 : index;
+		const reordered = [ ...parsedItems ];
+		const [ moved ] = reordered.splice( sourceIndex, 1 );
+		// After removing the source, indices above it shift down by 1.
+		const insertAt  = sourceIndex < index ? index - 1 : index;
 		reordered.splice( insertAt, 0, moved );
 
 		setAttributes( { parsedItems: reordered } );
@@ -258,7 +272,10 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 
 				{ /* ── Thumbnail preview (draggable) ── */ }
 				{ count > 0 && (
-					<div className="rumanimg-editor__preview">
+					<div
+						className="rumanimg-editor__preview"
+						onDragOver={ handleContainerDragOver }
+					>
 						{ parsedItems.map( ( item, i ) => {
 							const cls = [
 								'rumanimg-editor__thumb',
