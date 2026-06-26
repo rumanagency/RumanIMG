@@ -5,7 +5,7 @@ Tags: gallery, images, photographer, imgur, image-parser
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -102,6 +102,9 @@ Yes. Every duplicate request is protected by a WordPress nonce tied to the speci
 5. The settings page with language selector and developer info.
 
 == Changelog ==
+
+= 1.0.2 =
+* Fix: separate Plugin URI and Author URI to comply with WordPress.org guidelines
 
 = 1.0.1 =
 * Added readme.txt for WordPress.org plugin directory submission
