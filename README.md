@@ -142,6 +142,6 @@ npm run build
 
 ## الترخيص
 
-GPL-2.0-or-later — هذا البرنامج مرخّص بموجب [رخصة GNU العامة الإصدار 2](https://www.gnu.org/licenses/gpl-2.0.html) أو أي إصدار لاحق.
+MIT — يمكنك الاستخدام والتعديل والتوزيع بحرية تامة. راجع ملف [LICENSE](LICENSE) للتفاصيل.
 
 </div>
