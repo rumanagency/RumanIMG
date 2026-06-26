@@ -3,7 +3,7 @@
  * Plugin Name:       Ruman IMG
  * Plugin URI:        https://github.com/rumanagency/RumanIMG
  * Description:       Image management and optimization plugin by Ruman.
- * Version:           1.0.3
+ * Version:           1.1.0
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Saleh — Ruman
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'RUMANIMG_VERSION', '1.0.3' );
+define( 'RUMANIMG_VERSION', '1.1.0' );
 define( 'RUMANIMG_PATH',    plugin_dir_path( __FILE__ ) );
 define( 'RUMANIMG_URL',     plugin_dir_url( __FILE__ ) );
 define( 'RUMANIMG_BASENAME', plugin_basename( __FILE__ ) );

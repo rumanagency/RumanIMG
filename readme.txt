@@ -5,7 +5,7 @@ Tags: gallery, images, photographer, imgur, image-parser
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.3
+Stable tag: 1.1.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,8 +27,10 @@ Add the **Ruman IMG — Image Parser** block to any post, paste your embed codes
 * Detects all images across any supported host
 * Fixes URLs to point to the full-resolution original (not thumbnails or medium sizes)
 * Shows a live thumbnail preview inside the editor
-* Lets you **Paste into post** — inserts a clean HTML block directly below
+* **Click to reorder** — click any thumbnail to pick it up (ghost follows cursor), click another to swap their positions before inserting
+* Lets you **Paste into post** — inserts a clean HTML block directly below in your chosen order
 * Lets you **Copy output code** — copies the normalised HTML to your clipboard
+* Handles large batches — up to 300 images with batched background resolution, no server timeouts
 
 = Supported Image Hosts =
 
@@ -102,6 +104,10 @@ Yes. Every duplicate request is protected by a WordPress nonce tied to the speci
 5. The settings page with language selector and developer info.
 
 == Changelog ==
+
+= 1.1.0 =
+* New: click-to-pick-and-swap thumbnail reordering — click a thumbnail to pick it up, click another to swap positions before inserting into the post
+* New: batched AJAX resolution for large batches (up to 300 images) — resolves 5 URLs at a time with a live progress counter, no server timeouts
 
 = 1.0.3 =
 * Fix: rename header image to remove special characters from filename

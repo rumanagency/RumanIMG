@@ -1,7 +1,7 @@
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, TextareaControl, Button, ExternalLink, Spinner } from '@wordpress/components';
-import { useState, useRef } from '@wordpress/element';
+import { useState, useRef, useEffect, createPortal } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { createBlock } from '@wordpress/blocks';
 import { parseEmbedCode, buildOutput } from './parser';
@@ -36,12 +36,21 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 	const [ resolveProgress, setResolveProgress ] = useState( null );
 	// null = idle; { done: number, total: number } = resolving in progress
 
-	const [ dragIndex, setDragIndex ] = useState( null );
-	const [ dropIndex, setDropIndex ] = useState( null );
+	// Which thumbnail is currently "picked" (first click). null = nothing picked.
+	const [ pickedIndex, setPickedIndex ] = useState( null );
+	const [ ghostImg,    setGhostImg    ] = useState( null );
 
 	// Incremented each time a new resolution run starts; lets in-flight async
 	// callbacks detect that a newer paste has arrived and abort their writes.
 	const resolveGenRef = useRef( 0 );
+
+	const previewRef      = useRef( null );
+	const ghostRef        = useRef( null );
+	const pickedIndexRef  = useRef( null );    // mirrors pickedIndex for effect closures
+	const pickedOffsetRef = useRef( { x: 0, y: 0 } ); // click offset inside thumbnail
+	const initialGhostPos = useRef( { x: 0, y: 0 } ); // ghost position on first render
+	const parsedItemsRef  = useRef( parsedItems );
+	parsedItemsRef.current = parsedItems;
 
 	const { insertBlocks } = useDispatch( 'core/block-editor' );
 	const blockIndex   = useSelect( ( s ) => s( 'core/block-editor' ).getBlockIndex( clientId ),        [ clientId ] );
@@ -109,65 +118,64 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		}
 	}
 
-	// ── Drag-and-drop handlers ────────────────────────────────────────────────
+	// ── Click-to-pick / click-to-swap reorder ────────────────────────────────
+	//
+	// First click on a thumbnail "picks" it — the image attaches to the cursor.
+	// Second click on any other thumbnail swaps the two and drops the ghost.
+	// Moving the cursor outside the preview box cancels the pick.
+	// This avoids the native HTML5 DnD API entirely (Gutenberg intercepts it).
 
-	function handleDragStart( e, index ) {
-		// stopImmediatePropagation stops capture-phase listeners (Gutenberg uses these
-		// to detect block dragging). stopPropagation alone only stops bubble phase.
-		e.nativeEvent.stopImmediatePropagation();
-		e.stopPropagation();
-		e.dataTransfer.effectAllowed = 'move';
-		// Store index in dataTransfer so handleDrop can read it even if React state
-		// is stale across the async DnD event sequence.
-		e.dataTransfer.setData( 'text/plain', String( index ) );
-		setDragIndex( index );
-	}
+	function handleThumbMouseDown( e, index ) {
+		if ( e.button !== 0 ) return;
+		e.preventDefault();  // no text selection
+		e.stopPropagation(); // no Gutenberg block-drag
 
-	function handleDragOver( e, index ) {
-		e.preventDefault();
-		e.dataTransfer.dropEffect = 'move';
-		setDropIndex( index );
-	}
-
-	// Fired when dragging over the container gaps (between thumbnails).
-	function handleContainerDragOver( e ) {
-		e.preventDefault();
-		e.dataTransfer.dropEffect = 'move';
-	}
-
-	function handleDrop( e, index ) {
-		e.preventDefault();
-		// Read source index from dataTransfer as the authoritative source —
-		// React state (dragIndex) may be stale if the browser batched events.
-		const sourceIndex = parseInt( e.dataTransfer.getData( 'text/plain' ), 10 );
-		if ( isNaN( sourceIndex ) || sourceIndex === index ) {
-			setDragIndex( null );
-			setDropIndex( null );
-			return;
-		}
-
-		const reordered = [ ...parsedItems ];
-		const [ moved ] = reordered.splice( sourceIndex, 1 );
-		// After removing the source, indices above it shift down by 1.
-		const insertAt  = sourceIndex < index ? index - 1 : index;
-		reordered.splice( insertAt, 0, moved );
-
-		setAttributes( { parsedItems: reordered } );
-		setDragIndex( null );
-		setDropIndex( null );
-	}
-
-	function handleDragEnd() {
-		setDragIndex( null );
-		setDropIndex( null );
-	}
-
-	function handleDragLeave( e ) {
-		// Ignore leave events caused by moving into a child element (e.g. the <img>).
-		if ( ! e.currentTarget.contains( e.relatedTarget ) ) {
-			setDropIndex( null );
+		if ( pickedIndexRef.current === null ) {
+			// ── First click: pick up ──
+			const rect = e.currentTarget.getBoundingClientRect();
+			pickedOffsetRef.current = {
+				x: e.clientX - rect.left,
+				y: e.clientY - rect.top,
+			};
+			initialGhostPos.current = {
+				x: e.clientX - pickedOffsetRef.current.x,
+				y: e.clientY - pickedOffsetRef.current.y,
+			};
+			pickedIndexRef.current = index;
+			setPickedIndex( index );
+			setGhostImg( parsedItemsRef.current[ index ]?.imgUrl ?? null );
+		} else if ( pickedIndexRef.current === index ) {
+			// ── Clicked the same thumbnail: cancel ──
+			cancelPick();
+		} else {
+			// ── Second click on a different thumbnail: swap ──
+			const src  = pickedIndexRef.current;
+			const dest = index;
+			const items = [ ...parsedItemsRef.current ];
+			[ items[ src ], items[ dest ] ] = [ items[ dest ], items[ src ] ];
+			setAttributes( { parsedItems: items } );
+			pickedIndexRef.current = null;
+			setPickedIndex( null );
+			setGhostImg( null );
 		}
 	}
+
+	function cancelPick() {
+		pickedIndexRef.current = null;
+		setPickedIndex( null );
+		setGhostImg( null );
+	}
+
+	// Update ghost position on mouse move — no React re-render, direct DOM write.
+	useEffect( () => {
+		function onMouseMove( e ) {
+			if ( pickedIndexRef.current === null || ! ghostRef.current ) return;
+			ghostRef.current.style.left = ( e.clientX - pickedOffsetRef.current.x ) + 'px';
+			ghostRef.current.style.top  = ( e.clientY - pickedOffsetRef.current.y ) + 'px';
+		}
+		document.addEventListener( 'mousemove', onMouseMove );
+		return () => document.removeEventListener( 'mousemove', onMouseMove );
+	}, [] );
 
 	// ── Other actions ─────────────────────────────────────────────────────────
 
@@ -257,7 +265,9 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 									: __( 'images found', 'rumanimg' ) }
 								{ ' ' }
 								<span className="rumanimg-editor__hint">
-									{ __( '— drag to reorder', 'rumanimg' ) }
+									{ pickedIndex === null
+										? __( '— click to pick & swap', 'rumanimg' )
+										: __( '— click another to swap', 'rumanimg' ) }
 								</span>
 							</>
 						}
@@ -270,30 +280,25 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 					</div>
 				) }
 
-				{ /* ── Thumbnail preview (draggable) ── */ }
+				{ /* ── Thumbnail preview (mouse-drag reorder) ── */ }
 				{ count > 0 && (
 					<div
-						className="rumanimg-editor__preview"
-						onDragOver={ handleContainerDragOver }
+						ref={ previewRef }
+						className={ `rumanimg-editor__preview${ pickedIndex !== null ? ' is-pick-active' : '' }` }
+						onMouseLeave={ cancelPick }
 					>
 						{ parsedItems.map( ( item, i ) => {
 							const cls = [
 								'rumanimg-editor__thumb',
-								dragIndex === i && 'is-dragging',
-								dropIndex === i && 'is-drop-target',
+								pickedIndex === i && 'is-dragging',
 							].filter( Boolean ).join( ' ' );
 
 							return (
 								<div
 									key={ item.imgUrl }
 									className={ cls }
-									draggable
 									title={ `source: ${ item.siteName }` }
-									onDragStart={ ( e ) => handleDragStart( e, i ) }
-									onDragOver={ ( e ) => handleDragOver( e, i ) }
-									onDrop={ ( e ) => handleDrop( e, i ) }
-									onDragEnd={ handleDragEnd }
-									onDragLeave={ handleDragLeave }
+									onMouseDown={ ( e ) => handleThumbMouseDown( e, i ) }
 								>
 									<img src={ item.imgUrl } alt="" loading="lazy" draggable={ false } />
 								</div>
@@ -335,6 +340,14 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 				) }
 
 			</div>
+
+			{ /* Ghost thumbnail — floats with the cursor during mouse-drag */ }
+			{ ghostImg && createPortal(
+				<div ref={ ghostRef } className="rumanimg-drag-ghost">
+					<img src={ ghostImg } alt="" />
+				</div>,
+				document.body
+			) }
 		</>
 	);
 }
