@@ -1,7 +1,7 @@
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, TextareaControl, Button, ExternalLink, Spinner } from '@wordpress/components';
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useRef } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { createBlock } from '@wordpress/blocks';
 import { parseEmbedCode, buildOutput } from './parser';
@@ -24,62 +24,138 @@ const HOSTING_SITES = [
  */
 const NEEDS_RESOLUTION = [ 'ibb.co', 'imgbox.com' ];
 
+/** Max concurrent AJAX resolution requests — prevents server overload on large batches. */
+const BATCH_SIZE = 5;
+
 export default function Edit( { attributes, setAttributes, clientId } ) {
 	const blockProps = useBlockProps( { className: 'rumanimg-editor' } );
 	const { rawCode, parsedItems } = attributes;
 
-	const [ copied,    setCopied    ] = useState( false );
-	const [ pasted,    setPasted    ] = useState( false );
-	const [ resolving, setResolving ] = useState( false );
+	const [ copied,          setCopied          ] = useState( false );
+	const [ pasted,          setPasted          ] = useState( false );
+	const [ resolveProgress, setResolveProgress ] = useState( null );
+	// null = idle; { done: number, total: number } = resolving in progress
+
+	const [ dragIndex, setDragIndex ] = useState( null );
+	const [ dropIndex, setDropIndex ] = useState( null );
+
+	// Incremented each time a new resolution run starts; lets in-flight async
+	// callbacks detect that a newer paste has arrived and abort their writes.
+	const resolveGenRef = useRef( 0 );
 
 	const { insertBlocks } = useDispatch( 'core/block-editor' );
-	const blockIndex    = useSelect( ( s ) => s( 'core/block-editor' ).getBlockIndex( clientId ),         [ clientId ] );
-	const rootClientId  = useSelect( ( s ) => s( 'core/block-editor' ).getBlockRootClientId( clientId ),  [ clientId ] );
+	const blockIndex   = useSelect( ( s ) => s( 'core/block-editor' ).getBlockIndex( clientId ),        [ clientId ] );
+	const rootClientId = useSelect( ( s ) => s( 'core/block-editor' ).getBlockRootClientId( clientId ), [ clientId ] );
 
 	// ── Paste handler ────────────────────────────────────────────────────────
 
 	function handleChange( value ) {
 		const items = parseEmbedCode( value );
 		setAttributes( { rawCode: value, parsedItems: items } );
-		// Kick off resolution for hosts that need it (imgbb etc.)
 		if ( items.length ) resolveOriginals( items );
 	}
 
-	// ── Server-side URL resolver (for imgbb originals) ────────────────────
+	// ── Batched server-side URL resolver ─────────────────────────────────────
 
 	async function resolveOriginals( items ) {
-		const toResolve = items.filter( ( i ) => NEEDS_RESOLUTION.includes( i.siteName ) );
-		if ( ! toResolve.length ) return;
+		const needsResolutionIndices = items.reduce( ( acc, item, idx ) => {
+			if ( NEEDS_RESOLUTION.includes( item.siteName ) ) acc.push( idx );
+			return acc;
+		}, [] );
 
-		setResolving( true );
+		if ( ! needsResolutionIndices.length ) return;
 
-		const resolved = await Promise.all(
-			items.map( async ( item ) => {
-				if ( ! NEEDS_RESOLUTION.includes( item.siteName ) ) return item;
+		const gen   = ++resolveGenRef.current;
+		const total = needsResolutionIndices.length;
+		let   done  = 0;
 
-				try {
-					const body = new FormData();
-					body.append( 'action',  'rumanimg_resolve_url' );
-					body.append( 'nonce',   rumanimg_block.resolve_nonce );
-					body.append( 'pageUrl', item.pageUrl );
+		setResolveProgress( { done: 0, total } );
 
-					const res  = await fetch( rumanimg_block.ajax_url, { method: 'POST', body } );
-					const json = await res.json();
+		const working = [ ...items ];
 
-					if ( json.success && json.data.url ) {
-						return { ...item, imgUrl: json.data.url };
-					}
-				} catch {}
+		for ( let batchStart = 0; batchStart < needsResolutionIndices.length; batchStart += BATCH_SIZE ) {
+			const batch = needsResolutionIndices.slice( batchStart, batchStart + BATCH_SIZE );
 
-				return item;
-			} )
-		);
+			await Promise.all(
+				batch.map( async ( idx ) => {
+					const item = working[ idx ];
+					try {
+						const body = new FormData();
+						body.append( 'action',  'rumanimg_resolve_url' );
+						body.append( 'nonce',   rumanimg_block.resolve_nonce );
+						body.append( 'pageUrl', item.pageUrl );
 
-		setResolving( false );
-		setAttributes( { parsedItems: resolved } );
+						const res  = await fetch( rumanimg_block.ajax_url, { method: 'POST', body } );
+						const json = await res.json();
+
+						if ( json.success && json.data.url ) {
+							working[ idx ] = { ...item, imgUrl: json.data.url };
+						}
+					} catch {}
+
+					done++;
+					setResolveProgress( { done, total } );
+				} )
+			);
+
+			// Abort if the user pasted new content while this run was in flight.
+			if ( resolveGenRef.current !== gen ) return;
+
+			setAttributes( { parsedItems: [ ...working ] } );
+		}
+
+		if ( resolveGenRef.current === gen ) {
+			setResolveProgress( null );
+		}
 	}
 
-	// ── Actions ───────────────────────────────────────────────────────────────
+	// ── Drag-and-drop handlers ────────────────────────────────────────────────
+
+	function handleDragStart( e, index ) {
+		e.stopPropagation(); // prevent Gutenberg from treating this as a block drag
+		e.dataTransfer.effectAllowed = 'move';
+		e.dataTransfer.setData( 'text/plain', String( index ) ); // required for Firefox
+		setDragIndex( index );
+	}
+
+	function handleDragOver( e, index ) {
+		e.preventDefault();
+		e.dataTransfer.dropEffect = 'move';
+		if ( index !== dropIndex ) setDropIndex( index );
+	}
+
+	function handleDrop( e, index ) {
+		e.preventDefault();
+		if ( dragIndex === null || dragIndex === index ) {
+			setDragIndex( null );
+			setDropIndex( null );
+			return;
+		}
+
+		const reordered     = [ ...parsedItems ];
+		const [ moved ]     = reordered.splice( dragIndex, 1 );
+		// After removing the source item, indices above it shift down by 1.
+		const insertAt      = dragIndex < index ? index - 1 : index;
+		reordered.splice( insertAt, 0, moved );
+
+		setAttributes( { parsedItems: reordered } );
+		setDragIndex( null );
+		setDropIndex( null );
+	}
+
+	function handleDragEnd() {
+		setDragIndex( null );
+		setDropIndex( null );
+	}
+
+	function handleDragLeave( e ) {
+		// Ignore leave events caused by moving into a child element (e.g. the <img>).
+		if ( ! e.currentTarget.contains( e.relatedTarget ) ) {
+			setDropIndex( null );
+		}
+	}
+
+	// ── Other actions ─────────────────────────────────────────────────────────
 
 	function handleClear() {
 		setAttributes( { rawCode: '', parsedItems: [] } );
@@ -101,6 +177,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 
 	const count    = parsedItems.length;
 	const hasInput = rawCode.trim().length > 0;
+	const busy     = resolveProgress !== null;
 
 	return (
 		<>
@@ -153,9 +230,22 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 				{ /* ── Status badge ── */ }
 				{ count > 0 && (
 					<div className="rumanimg-editor__status is-success">
-						{ resolving
-							? <><Spinner /> { __( 'Fetching original URLs…', 'rumanimg' ) }</>
-							: <>✓ { count } { count === 1 ? __( 'image found', 'rumanimg' ) : __( 'images found', 'rumanimg' ) }</>
+						{ busy
+							? <>
+								<Spinner />
+								{ __( 'Resolving', 'rumanimg' ) }{ ' ' }
+								{ resolveProgress.done } / { resolveProgress.total }{ __( '…', 'rumanimg' ) }
+							</>
+							: <>
+								✓ { count }{ ' ' }
+								{ count === 1
+									? __( 'image found', 'rumanimg' )
+									: __( 'images found', 'rumanimg' ) }
+								{ ' ' }
+								<span className="rumanimg-editor__hint">
+									{ __( '— drag to reorder', 'rumanimg' ) }
+								</span>
+							</>
 						}
 					</div>
 				) }
@@ -166,21 +256,32 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 					</div>
 				) }
 
-				{ /* ── Thumbnail preview ── */ }
+				{ /* ── Thumbnail preview (draggable) ── */ }
 				{ count > 0 && (
 					<div className="rumanimg-editor__preview">
-						{ parsedItems.map( ( item, i ) => (
-							<a
-								key={ i }
-								href={ item.pageUrl }
-								target="_blank"
-								rel="noreferrer"
-								className="rumanimg-editor__thumb"
-								title={ `source: ${ item.siteName }` }
-							>
-								<img src={ item.imgUrl } alt="" loading="lazy" />
-							</a>
-						) ) }
+						{ parsedItems.map( ( item, i ) => {
+							const cls = [
+								'rumanimg-editor__thumb',
+								dragIndex === i && 'is-dragging',
+								dropIndex === i && 'is-drop-target',
+							].filter( Boolean ).join( ' ' );
+
+							return (
+								<div
+									key={ item.imgUrl }
+									className={ cls }
+									draggable
+									title={ `source: ${ item.siteName }` }
+									onDragStart={ ( e ) => handleDragStart( e, i ) }
+									onDragOver={ ( e ) => handleDragOver( e, i ) }
+									onDrop={ ( e ) => handleDrop( e, i ) }
+									onDragEnd={ handleDragEnd }
+									onDragLeave={ handleDragLeave }
+								>
+									<img src={ item.imgUrl } alt="" loading="lazy" draggable={ false } />
+								</div>
+							);
+						} ) }
 					</div>
 				) }
 
@@ -190,7 +291,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 						<Button
 							variant="primary"
 							onClick={ handlePasteToPost }
-							disabled={ pasted || resolving }
+							disabled={ pasted || busy }
 							className="rumanimg-editor__btn-insert"
 						>
 							{ pasted
@@ -200,7 +301,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 						<Button
 							variant="secondary"
 							onClick={ handleCopy }
-							disabled={ copied || resolving }
+							disabled={ copied || busy }
 						>
 							{ copied
 								? __( '✓ Copied!', 'rumanimg' )
