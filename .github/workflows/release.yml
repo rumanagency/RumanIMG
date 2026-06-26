@@ -34,12 +34,14 @@ jobs:
           rsync -av \
             --exclude='.git' \
             --exclude='.github' \
+            --exclude='.gitignore' \
             --exclude='node_modules' \
             --exclude='src' \
             --exclude='package.json' \
             --exclude='package-lock.json' \
             --exclude='plan.md' \
             --exclude='CLAUDE.md' \
+            --exclude='CODE_OF_CONDUCT.md' \
             . /tmp/pkg/rumanimg/
           cd /tmp/pkg
           zip -r rumanimg-${{ github.ref_name }}.zip rumanimg/

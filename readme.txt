@@ -3,9 +3,9 @@ Contributors: rumanagency
 Donate link: https://ruman.sa
 Tags: gallery, images, photographer, imgur, image-parser
 Requires at least: 5.8
-Tested up to: 6.7
+Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -102,6 +102,11 @@ Yes. Every duplicate request is protected by a WordPress nonce tied to the speci
 5. The settings page with language selector and developer info.
 
 == Changelog ==
+
+= 1.0.3 =
+* Fix: rename header image to remove special characters from filename
+* Fix: exclude .gitignore and CODE_OF_CONDUCT.md from release zip
+* Fix: update "Tested up to" to WordPress 7.0
 
 = 1.0.2 =
 * Fix: separate Plugin URI and Author URI to comply with WordPress.org guidelines

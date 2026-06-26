@@ -1,6 +1,6 @@
 <div dir="rtl">
 
-![Ruman IMG](assets/images/ٍRumanIMG-header.png)
+![Ruman IMG](assets/images/RumanIMG-header.png)
 
 # Ruman IMG — إضافة ووردبريس للمصورين
 
