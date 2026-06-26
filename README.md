@@ -140,6 +140,6 @@ npm run build
 
 ## الترخيص
 
-GPL-2.0-or-later — راجع [GNU General Public License](https://www.gnu.org/licenses/gpl-2.0.html) لمزيد من التفاصيل.
+GPL-2.0-or-later — هذا البرنامج مرخّص بموجب [رخصة GNU العامة الإصدار 2](https://www.gnu.org/licenses/gpl-2.0.html) أو أي إصدار لاحق.
 
 </div>
