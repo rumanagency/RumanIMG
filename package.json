@@ -1,0 +1,16 @@
+{
+  "name": "rumanimg",
+  "version": "1.0.0",
+  "description": "Ruman IMG — WordPress plugin for photographers",
+  "author": "Saleh — Ruman <saleh@ruman.sa>",
+  "license": "GPL-2.0-or-later",
+  "scripts": {
+    "build": "wp-scripts build",
+    "start": "wp-scripts start",
+    "lint:js": "wp-scripts lint-js",
+    "lint:css": "wp-scripts lint-style"
+  },
+  "devDependencies": {
+    "@wordpress/scripts": "^30.0.0"
+  }
+}

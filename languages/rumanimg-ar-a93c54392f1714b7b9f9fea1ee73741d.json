@@ -1,0 +1,30 @@
+{
+	"translation-revision-date": "2025-06-26T00:00:00+00:00",
+	"generator": "Ruman/1.0",
+	"source": "build/blocks/image-parser/index.js",
+	"domain": "messages",
+	"locale_data": {
+		"messages": {
+			"": {
+				"domain": "messages",
+				"lang": "ar",
+				"plural-forms": "nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;"
+			},
+			"Ruman IMG — Image Parser":                                       [ "Ruman IMG — محلل الصور" ],
+			"Image Hosting Sites":                                            [ "مواقع استضافة الصور" ],
+			"Open a site to upload your photos:":                             [ "افتح أحد المواقع لرفع صورك:" ],
+			"Paste embed code":                                               [ "الصق كود التضمين" ],
+			"Supports: imgur · ibb · freeimage.host · postimg.cc":           [ "يدعم: imgur · ibb · freeimage.host · postimg.cc" ],
+			"Paste your embed HTML here…":                                    [ "الصق كود HTML هنا…" ],
+			"Fetching original URLs…":                                        [ "جارٍ جلب روابط الصور الأصلية…" ],
+			"image found":                                                    [ "صورة" ],
+			"images found":                                                   [ "صور" ],
+			"No supported images detected — check your embed code.":          [ "لم يتم اكتشاف صور مدعومة — تحقق من كود التضمين." ],
+			"✓ Inserted!":                                                    [ "✓ تم اللصق!" ],
+			"Paste into post":                                                [ "لصق في المقالة" ],
+			"✓ Copied!":                                                      [ "✓ تم النسخ!" ],
+			"Copy output code":                                               [ "نسخ الكود الناتج" ],
+			"Clear":                                                          [ "مسح" ]
+		}
+	}
+}

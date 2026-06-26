@@ -1,0 +1,271 @@
+/* ── Ruman IMG — Admin Styles ───────────────────────────────────────────────── */
+
+:root {
+	--ri-green:      #6dd708;
+	--ri-green-dark: #58b006;
+	--ri-green-pale: #f0fde0;
+	--ri-dark:       #1a1a1a;
+	--ri-card:       #fff;
+	--ri-border:     #e2e8f0;
+	--ri-muted:      #64748b;
+	--ri-radius:     10px;
+	--ri-shadow:     0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.05);
+}
+
+.rumanimg-wrap {
+	max-width: 960px;
+	margin-top: 0 !important;
+	padding-top: 0 !important;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+
+.rumanimg-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	background: var(--ri-dark);
+	border-radius: var(--ri-radius);
+	padding: 20px 28px;
+	margin-bottom: 24px;
+}
+
+.rumanimg-header__logo {
+	display: block;
+	max-width: 160px;
+	height: auto;
+}
+
+.rumanimg-header__version {
+	font-size: .75rem;
+	font-weight: 600;
+	color: var(--ri-green);
+	background: rgba(109,215,8,.12);
+	border: 1px solid rgba(109,215,8,.3);
+	border-radius: 20px;
+	padding: 3px 10px;
+	letter-spacing: .03em;
+}
+
+/* ── Stats ───────────────────────────────────────────────────────────────────── */
+
+.rumanimg-stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 16px;
+	margin-bottom: 20px;
+}
+
+.rumanimg-stat-card {
+	background: var(--ri-card);
+	border: 1px solid var(--ri-border);
+	border-radius: var(--ri-radius);
+	box-shadow: var(--ri-shadow);
+	padding: 20px 24px 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.rumanimg-stat-card--accent {
+	border-color: rgba(109,215,8,.4);
+	background: linear-gradient(135deg, #fff 60%, var(--ri-green-pale));
+}
+
+.rumanimg-stat-card__inner {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.rumanimg-stat-card__number {
+	font-size: 2.25rem;
+	font-weight: 700;
+	line-height: 1;
+	color: var(--ri-dark);
+}
+
+.rumanimg-stat-card--accent .rumanimg-stat-card__number {
+	color: var(--ri-green-dark);
+}
+
+.rumanimg-stat-card__label {
+	font-size: .8125rem;
+	color: var(--ri-muted);
+	font-weight: 500;
+}
+
+.rumanimg-stat-card__link {
+	font-size: .8125rem;
+	font-weight: 600;
+	color: var(--ri-green-dark);
+	text-decoration: none;
+	border-top: 1px solid var(--ri-border);
+	padding-top: 10px;
+}
+
+.rumanimg-stat-card__link:hover {
+	color: var(--ri-dark);
+}
+
+/* ── Section ─────────────────────────────────────────────────────────────────── */
+
+.rumanimg-section {
+	background: var(--ri-card);
+	border: 1px solid var(--ri-border);
+	border-radius: var(--ri-radius);
+	box-shadow: var(--ri-shadow);
+	padding: 22px 28px 24px;
+	margin-bottom: 20px;
+}
+
+.rumanimg-section__title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: .9375rem;
+	font-weight: 700;
+	margin: 0 0 14px;
+	padding: 0 0 12px;
+	color: var(--ri-dark);
+	border-bottom: 2px solid var(--ri-green);
+}
+
+.rumanimg-section__title svg {
+	width: 18px;
+	height: 18px;
+	color: var(--ri-green-dark);
+	flex-shrink: 0;
+}
+
+.rumanimg-section__desc {
+	font-size: .875rem;
+	color: var(--ri-muted);
+	margin: -4px 0 16px;
+}
+
+/* ── Hosting links ───────────────────────────────────────────────────────────── */
+
+.rumanimg-hosting-links {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.rumanimg-hosting-link {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	background: #f8fafc;
+	border: 1px solid var(--ri-border);
+	border-radius: 8px;
+	padding: 12px 18px;
+	text-decoration: none;
+	color: var(--ri-dark);
+	min-width: 110px;
+	text-align: center;
+	transition: border-color .15s, background .15s, transform .1s;
+}
+
+.rumanimg-hosting-link:hover {
+	border-color: var(--ri-green);
+	background: var(--ri-green-pale);
+	color: var(--ri-dark);
+	transform: translateY(-1px);
+}
+
+.rumanimg-hosting-link__label {
+	font-size: .875rem;
+	font-weight: 600;
+}
+
+.rumanimg-hosting-link__domain {
+	font-size: .7rem;
+	color: var(--ri-muted);
+}
+
+/* ── Settings page grid ──────────────────────────────────────────────────────── */
+
+.rumanimg-settings-grid {
+	display: grid;
+	grid-template-columns: 1fr 280px;
+	gap: 20px;
+	align-items: start;
+}
+
+@media ( max-width: 782px ) {
+	.rumanimg-settings-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+.rumanimg-submit {
+	margin-top: 8px !important;
+}
+
+/* ── About card ──────────────────────────────────────────────────────────────── */
+
+.rumanimg-about__logo-wrap {
+	background: var(--ri-dark);
+	border-radius: 8px;
+	padding: 14px 18px;
+	margin-bottom: 16px;
+}
+
+.rumanimg-about__logo {
+	display: block;
+	max-width: 120px;
+	height: auto;
+}
+
+.rumanimg-about__list {
+	list-style: none;
+	margin: 0 0 16px;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.rumanimg-about__list li {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: .875rem;
+	color: var(--ri-dark);
+}
+
+.rumanimg-about__list a {
+	color: var(--ri-green-dark);
+	text-decoration: none;
+}
+
+.rumanimg-about__list a:hover {
+	text-decoration: underline;
+}
+
+.rumanimg-about__icon {
+	font-size: 1rem;
+	width: 22px;
+	text-align: center;
+	flex-shrink: 0;
+}
+
+.rumanimg-about__version {
+	font-size: .8125rem;
+	color: var(--ri-muted);
+	border-top: 1px solid var(--ri-border);
+	padding-top: 12px;
+}
+
+/* ── Settings table overrides ────────────────────────────────────────────────── */
+
+.rumanimg-section .form-table th {
+	padding-left: 0;
+	font-size: .875rem;
+	color: var(--ri-dark);
+}
+
+.rumanimg-section .form-table td {
+	padding-left: 0;
+}

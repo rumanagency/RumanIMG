@@ -1,0 +1,19 @@
+// ── Frontend gallery ─────────────────────────────────────────────────────────
+
+.rumanimg-gallery {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1em;
+
+	&__item {
+		display: inline-block;
+		line-height: 0;
+
+		img {
+			width: auto;
+			height: auto;
+			max-width: 100%;
+			display: block;
+		}
+	}
+}

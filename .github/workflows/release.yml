@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build assets
+        run: npm run build
+
+      - name: Create plugin zip
+        run: |
+          mkdir -p /tmp/pkg/rumanimg
+          rsync -av \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='node_modules' \
+            --exclude='src' \
+            --exclude='package.json' \
+            --exclude='package-lock.json' \
+            --exclude='plan.md' \
+            --exclude='CLAUDE.md' \
+            . /tmp/pkg/rumanimg/
+          cd /tmp/pkg
+          zip -r rumanimg-${{ github.ref_name }}.zip rumanimg/
+          echo "ZIP_PATH=/tmp/pkg/rumanimg-${{ github.ref_name }}.zip" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Ruman IMG ${{ github.ref_name }}"
+          body: |
+            ## Ruman IMG ${{ github.ref_name }}
+
+            ### التثبيت السريع
+            1. نزّل ملف **`rumanimg-${{ github.ref_name }}.zip`** من الأسفل
+            2. في لوحة تحكم ووردبريس: **الإضافات ← أضف جديدة ← رفع إضافة**
+            3. اختر الملف المضغوط ثم انقر **ثبّت الآن**
+            4. فعّل الإضافة
+
+            ### ما الجديد
+            - راجع [CHANGELOG](https://github.com/${{ github.repository }}/commits/main) لتفاصيل التغييرات
+          files: ${{ env.ZIP_PATH }}
+          draft: false
+          prerelease: false

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "rumanimg/image-parser",
+  "version": "1.0.0",
+  "title": "Ruman IMG — Image Parser",
+  "category": "media",
+  "icon": "format-image",
+  "description": "Paste embed codes from imgur, ibb, freeimage.host or postimg.cc and get a clean, normalised image gallery.",
+  "keywords": ["images", "gallery", "imgur", "ibb", "photographer"],
+  "textdomain": "rumanimg",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php",
+  "attributes": {
+    "rawCode": {
+      "type": "string",
+      "default": ""
+    },
+    "parsedItems": {
+      "type": "array",
+      "default": []
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": ["wide", "full"]
+  }
+}
